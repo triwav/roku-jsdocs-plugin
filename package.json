@@ -1,0 +1,22 @@
+{
+  "name": "roku-jsdocs-plugin",
+  "version": "1.0.0",
+  "description": "Plugin For JSDoc that converts Brightscript files into comments compatible with JSDoc",
+  "scripts": {
+    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -t node_modules/minami -d docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/triwav/roku-jsdocs-plugin.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/triwav/roku-jsdocs-plugin/issues"
+  },
+  "homepage": "https://github.com/triwav/roku-jsdocs-plugin",
+  "dependencies": {
+    "jsdoc": "^3.6.3",
+    "minami": "^1.2.3",
+    "brs": "^0.14.0"
+  }
+}

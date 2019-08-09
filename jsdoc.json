@@ -1,0 +1,10 @@
+{
+	"plugins": ["scripts/jsdoc/convertRokuDocs.js", "plugins/markdown"],
+	"source": {
+		"include": ["components", "source"],
+		"includePattern": ".+\\.brs?$"
+	},
+	"opts": {
+		"recurse": true
+	}
+}
