@@ -27,13 +27,15 @@ Create a `./jsdoc.json` configuration file - https://jsdoc.app/about-configuring
 
 Example:
 
-```jsonc {
+```jsonc
+{
   "plugins": [
-    "./node_modules/brighterscript-jsdoc-plugin/convert-brighterscript-docs.js",
+    "plugins/markdown",
+    "./node_modules/brighterscript-jsdocs-plugin/convert-brighterscript-docs.js"
   ],
   "source": {
     "include": [
-      "src", // directories with .bs/.brs files
+      "src" // directories with .bs/.brs files
     ],
     "includePattern": ".+\\.br?s$"
   },
@@ -47,7 +49,7 @@ Example:
 
 ```json
   "scripts": {
-    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -t -d docs"
+    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -d docs"
   }
 ```
 
