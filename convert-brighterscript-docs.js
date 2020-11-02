@@ -244,7 +244,7 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
  */
 function processClassField(comment, field) {
   const output = []
-  if (field.accessModifier && func.accessModifier === "Private") {
+  if (field.accessModifier && field.accessModifier === "Private") {
     return ""
   }
   let description = "";
