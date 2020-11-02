@@ -1,0 +1,31 @@
+
+' Namespace for testing
+namespace TestBsDoc
+
+  ' Test Brighterscript class
+  class TestBsKlass
+
+    prop as float = 1
+
+    ' I like eating pie
+    someField as float = 3.14
+
+    ' Constructor
+    '@param {string} name for this Class
+    function new(name as string) as void
+      m.name = name
+    end function
+
+    ' Capitalizes a word
+    ' @param {string} the word to capitalize
+    ' @return the capitalized word
+    function capitalize(word as string) as string
+      return ucase(word)
+    end function
+
+    ' Says hi to the given name
+    function sayHello() as string
+      return "hi " + m.name
+    end function
+  end class
+end namespace

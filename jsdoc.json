@@ -1,6 +1,6 @@
 {
   "plugins": [
-    "scripts/jsdoc/convert-brighterscript-docs.js",
+    "convert-brighterscript-docs.js",
     "plugins/markdown"
   ],
   "source": {
