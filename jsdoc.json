@@ -1,10 +1,16 @@
 {
-	"plugins": ["scripts/jsdoc/convertRokuDocs.js", "plugins/markdown"],
-	"source": {
-		"include": ["components", "source"],
-		"includePattern": ".+\\.brs?$"
-	},
-	"opts": {
-		"recurse": true
-	}
+  "plugins": [
+    "scripts/jsdoc/convert-brighterscript-docs.js",
+    "plugins/markdown"
+  ],
+  "source": {
+    "include": [
+      "components",
+      "source"
+    ],
+    "includePattern": ".+\\.br?s$"
+  },
+  "opts": {
+    "recurse": true
+  }
 }

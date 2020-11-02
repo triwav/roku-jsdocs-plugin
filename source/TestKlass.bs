@@ -1,0 +1,75 @@
+'  Test Brighterscript function
+'  @param {object} foo something
+'  @param {integer} bar another thing
+'  @return the word "brighterscript"
+function testBsFunction(foo as object, bar as integer) as string
+  return "brighterscipt"
+end function
+
+namespace TestDoc
+
+  '  Test a function inside a namespace function
+  '  @param {integer} x
+  '  @param {integer} y another thing
+  '  @return the word "brighterscript"
+  function testNameSpaceFunction(x as integer, y as integer) as object
+    return {x: x, y: y}
+  end function
+
+  ' /**
+  ' Test Brighterscript Parent class
+  ' ***/
+  class TestParentKlass
+
+    prop as float = 1
+    ' I like eating pie
+    someField as float = 3.14
+
+    ' Constructor
+    '@param {string} name for this ParentClass
+    function new(name as string) as void
+      m.name = name
+    end function
+
+    ' Capitalizes a word
+    ' @param {string} the word to capitalize
+    ' @return the capitalized word
+    function capitalize(word as string) as string
+      return ucase(word)
+    end function
+
+    ' Says hi to the given name
+    function sayHello() as string
+      return "hi " + m.name
+    end function
+  end class
+
+
+  ' /**
+  ' Test Brighterscript class
+  ' ***/
+  class TestKlass extends TestParentKlass
+
+    ' Constructor
+    function new(name as string) as void
+      super(name)
+    end function
+    '
+    override function sayHello() as string
+      return "Hello " + m.name
+    end function
+
+
+    function yellHello() as string
+      return "Hello " + m.capitalize(m.name)
+    end function
+
+    ' Test comment overriding parser
+    '@param {TestKlass} klass an actual klass name in the comments
+    function testCommentsWithClasses(klass) as object
+      return klass
+    end function
+
+  end class
+
+end namespace
