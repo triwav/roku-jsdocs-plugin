@@ -5,8 +5,7 @@
   ],
   "source": {
     "include": [
-      "components",
-      "source"
+      "examples"
     ],
     "includePattern": ".+\\.br?s$"
   },

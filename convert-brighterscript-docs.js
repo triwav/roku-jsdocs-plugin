@@ -1,8 +1,6 @@
 'use strict';
 const bs = require('brighterscript');
 const path = require('path');
-const { connected } = require('process');
-
 
 const jsCommentStartRegex = /^[\s]*(?:\/\*+)?[\s]*(.*)/g
 const bsMeaningfulCommentRegex = /^[\s]*(?:'|REM)[\s]*\**[\s]*(.*)/g
@@ -11,13 +9,16 @@ const returnRegex = /@returns?\s*(?:{(?:[^}]*)})?\s*(.*)/
 const extendsRegex = /@extends/
 
 /** @type {string[]} */
-let parserLines
+const namespacesCreated = []
+
+/** @type {string[]} */
+let parserLines = []
 
 /**
  * Groups Statements into comments, functions, classes and namespaces
  *
  * @param {bs.Statement[]} statements
- * @returns
+ * @returns {{functions:bs.FunctionStatement[],classes:bs.ClassStatement[],namespaces:bs.NamespaceStatement[],comments:bs.CommentStatement[]}}
  */
 function groupStatements(statements) {
   /** @type{bs.CommentStatement[]} */
@@ -47,11 +48,11 @@ function groupStatements(statements) {
 }
 
 
-
 /**
- * getTypeName
+ * Gets the type name for the given type
+ * Defaults to "dynamic" if it can't decide
  *
- * @param {number | {kind:text}} type id
+ * @param {number | {kind:text}} type id or Type Token
  * @returns {string} the name for the type id given
  */
 function getTypeName(type) {
@@ -69,10 +70,11 @@ function getTypeName(type) {
 }
 
 /**
+ * Finds the comment that ends the line above the given statement
  *
- * @param {bs.CommentStatement[]} comments
- * @param {bs.Statement} stmt
- * @returns {bs.CommentStatement}
+ * @param {bs.CommentStatement[]} comments List of comments to search
+ * @param {bs.Statement} stmt The statement in question
+ * @returns {bs.CommentStatement} the correct comment, if found, otherwise undefined
  */
 function getCommentForStatement(comments, stmt) {
   return comments.find((comment) => {
@@ -88,14 +90,15 @@ function getMemberOf(moduleName = "", namespaceName = "") {
     return (` * @memberof module:${moduleName}`);
   }
   return ""
-
 }
 
 /**
- * convertCommentTextToJsDocLines
+ * Convert a comment statement text to Js Doc Lines
+ * This will return a string[] with each line of a block comment
+ * But - it does not include comment closing tag (ie. asterisk-slash)
  *
  * @param {bs.CommentStatement} comment
- * @returns {string[]}
+ * @returns {string[]} Array of comment lines in JSDoc format -
  */
 function convertCommentTextToJsDocLines(comment) {
   const commentLines = ['/**'];
@@ -117,7 +120,8 @@ function convertCommentTextToJsDocLines(comment) {
   return commentLines
 }
 /**
- *
+ * Helper function to display a statement for debugging
+ * (Not used)
  *
  * @param {bs.Statement} stmt
  * @returns {void}
@@ -138,6 +142,9 @@ function displayStatement(stmt) {
   else if (stmt instanceof bs.ClassMethodStatement) {
     console.log(`Method`)
   }
+  else if (stmt instanceof bs.ClassFieldStatement) {
+    console.log(`Field`)
+  }
   else if (stmt.constructor) {
     console.log(`${stmt.constructor.toString()}`)
   }
@@ -148,13 +155,14 @@ function displayStatement(stmt) {
 }
 
 /**
- * processFunction
+ * Processes a function or a class method
+ * For class methods, the "new()" function is outputed as "constructor()"
  *
- * @param {bs.CommentStatement} comment
- * @param {bs.ClassMethodStatement} func
- * @param {string} moduleName
- * @param {string} namespaceName
- * @returns {string}
+ * @param {bs.CommentStatement} comment The comment appearing above this function in bs/brs code
+ * @param {bs.ClassMethodStatement} func teh actual function or class method
+ * @param {string} moduleName [moduleName=""] the module name this function is in
+ * @param {string} namespaceName [namespaceName=""] the namespace this function is in
+ * @return {string} the jsdoc string for the function provided
  */
 function processFunction(comment, func, moduleName = "", namespaceName = "") {
   const output = []
@@ -214,14 +222,12 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
   const funcName = func.name.text
   let funcDeclaration = `function ${funcName}() {};\n`
   if (func instanceof bs.ClassMethodStatement) {
-    if (funcName === "new") {
+    if (funcName.toLowerCase() === "new") {
       commentLines.push(" * @constructor")
       funcDeclaration = `constructor() {};\n`
-
     }
     else {
       funcDeclaration = `${funcName}() {};\n`
-
     }
   }
   commentLines.push(' */');
@@ -236,11 +242,13 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
 }
 
 /**
- * processClassField
+ * Processed a Class Field
+ * These are added as property tags in the class's jsdoc comment
+ * Private fields are ignored
  *
- * @param {bs.CommentStatement} comment
- * @param {bs.ClassFieldStatement} field
- * @returns {string}
+ * @param {bs.CommentStatement} comment the comment in the line above this field
+ * @param {bs.ClassFieldStatement} field the field to process
+ * @returns {string} the property tag for the class this field is in
  */
 function processClassField(comment, field) {
   const output = []
@@ -258,13 +266,15 @@ function processClassField(comment, field) {
 
 
 /**
- * processClass
+ * Processes a class
+ * Classes can have member fields (properties or member methods)
+ * Note: the new() method is renamed to constructor()
  *
- * @param {bs.CommentStatement} comment
- * @param {bs.ClassStatement} klass
- * @param {string} moduleName
- * @param {string} namespaceName [namespaceName=""]
- * @returns
+ * @param {bs.CommentStatement} comment The comment that appeared above this class in bs/brs
+ * @param {bs.ClassStatement} klass the actual class statement
+ * @param {string} moduleName [moduleName=""] the module name this class is in
+ * @param {string} namespaceName [namespaceName=""] the namespace this class is in
+ * @return {string} the jsdoc string for the class provided
  */
 function processClass(comment, klass, moduleName = "", namespaceName = "") {
   const output = []
@@ -320,12 +330,14 @@ function processClass(comment, klass, moduleName = "", namespaceName = "") {
 }
 
 /**
- * processNamespace
+ * Processes a namespace
+ * Namespaces are recursive - they can contain other functions, classes or namespaces
  *
- * @param {bs.CommentStatement} comment
- * @param {bs.NamespaceStatement} namespace
- * @param {string} moduleName [moduleName=""]
- * @param {string} parentNamespaceName [parentNamespaceName=""]
+ * @param {bs.CommentStatement} comment The comment that appeared above this namespace in bs/brs
+ * @param {bs.NamespaceStatement} namespace the actual namespace statement
+ * @param {string} moduleName [moduleName=""] the module name this namespace is in
+ * @param {string} parentNamespaceName [parentNamespaceName=""] the namespace this namespace is in
+ * @return {string} the jsdoc string for the namespace provided
  */
 function processNamespace(comment, namespace, moduleName = "", parentNamespaceName) {
 
@@ -335,21 +347,23 @@ function processNamespace(comment, namespace, moduleName = "", parentNamespaceNa
   if (parentNamespaceName) {
     namespaceName = parentNamespaceName + "." + namespaceName
   }
+  if (!namespacesCreated.includes(namespaceName)) {
+    // have not created this namespace yet
+    let commentLines = convertCommentTextToJsDocLines(comment);
 
-  let commentLines = convertCommentTextToJsDocLines(comment);
+    commentLines.push(getMemberOf(moduleName, parentNamespaceName));
+    commentLines.push(` * @namespace ${namespaceName}`)
+    commentLines.push(' */');
 
-  commentLines.push(getMemberOf(moduleName, parentNamespaceName));
-  commentLines.push(` * @namespace ${namespaceName}`)
-  commentLines.push(' */');
-
-  output.push(commentLines.join('\n'));
-  if (parentNamespaceName) {
-    output.push(`${parentNamespaceName}.namespaceName = {}`)
+    output.push(commentLines.join('\n'));
+    if (parentNamespaceName) {
+      output.push(`${parentNamespaceName}.namespaceName = {}`)
+    }
+    else {
+      output.push(`var ${namespaceName} = {};`);
+    }
+    namespacesCreated.push(namespaceName)
   }
-  else {
-    output.push(`var ${namespaceName} = {};`);
-  }
-
 
   output.push(processStatements(namespace.body.statements, moduleName, namespaceName))
   return output.join('\n');
@@ -358,12 +372,13 @@ function processNamespace(comment, namespace, moduleName = "", parentNamespaceNa
 
 
 /**
- * processStatements
+ * Process bright(er)script statements. Handles functions, namespace or class statements
+ * Namespaces are recursive - they can contain other functions, classes or namespaces
  *
- * @param {bs.Statement[]} statements
- * @param {string} [moduleName=""]
- * @param {string} namespaceName [namespaceName=""]
- * @returns
+ * @param {bs.Statement[]} statements an array of statements
+ * @param {string} [moduleName=""] the module name these statements are in
+ * @param {string} namespaceName [namespaceName=""] the namespace these statements are in
+ * @returns {string} the jsdoc string for the statements provided
  */
 function processStatements(statements, moduleName = "", namespaceName = "") {
 
@@ -417,10 +432,6 @@ exports.handlers = {
       output.push(`/** @module ${moduleName} */`);
     }
     output.push(processStatements(statements, moduleName))
-
-
     e.source = output.join('\n');
-
-    //console.log(e.source)
   }
 };

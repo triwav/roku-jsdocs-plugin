@@ -1,6 +1,6 @@
 # What is this?
 
-Plugin For (JSDoc|https://jsdoc.app/) that converts Brighterscript files into comments compatible with JSDoc. Automatically pulls in function/sub name and param and return types. Can be overridden with more info as desired (description, param type override or param description). Automatically bases module off of file name but can be changed and used to combine multiple files into one module. Module is automatically applied to each sub/function in that file
+Plugin For [JSDoc](https://jsdoc.app/) that converts Brighterscript files into comments compatible with JSDoc. Automatically pulls in function/sub name and param and return types. Can be overridden with more info as desired (description, param type override or param description). Automatically bases module off of file name but can be changed and used to combine multiple files into one module. Module is automatically applied to each sub/function in that file
 
 # How To View Example Docs
 
@@ -61,11 +61,11 @@ npm run docs
 
 # Brightscript and Brighterscript
 
-Internally, this plugin uses the [brighterscript|https://github.com/rokucommunity/brighterscript] parser. Brighterscript is a superset of Roku's Brightscript language, so plain old .brs files should be parsed properly.
+Internally, this plugin uses the [Brighterscript](https://github.com/rokucommunity/brighterscript) parser. Brighterscript is a superset of Roku's Brightscript language, so plain old .brs files should be parsed properly.
 
 # Writing Documentation
 
-If you have used [BrightScriptDoc|https://developer.roku.com/docs/developer-program/dev-tools/brightscript-doc.md] formatting for documentation, most comments should be parsed properly
+If you have used [BrightScriptDoc](https://developer.roku.com/docs/developer-program/dev-tools/brightscript-doc.md) formatting for documentation, most comments should be parsed properly
 
 Basic tags for functions and classes should work: @param, @return, etc. As this is a plugin for jsdoc, other tags that are included in the comments are passed through to jsdoc for interpretation.
 

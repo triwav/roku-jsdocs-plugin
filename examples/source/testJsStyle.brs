@@ -2,7 +2,7 @@
 ' @param {integer} x - the first number
 ' @param {integer} y - the second number
 ' @return {integer} the max of x and y
-function maxBrsStyle(x, y)
+function maxBrsStyle(x, y) as integer
   if x > y
     return x
   end if
@@ -15,7 +15,7 @@ end function
 '  * @param {integer} y - the second number
 '  * @return {integer} the max of x and y
 ' */
-function maxJsStyle(x, y)
+function maxJsStyle(x, y) as integer
   if x > y
     return x
   end if

@@ -1,9 +1,10 @@
 {
   "name": "brighterscript-jsdocs-plugin",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Plugin For JSDoc that converts Brighterscript files into comments compatible with JSDoc",
   "scripts": {
-    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -t node_modules/minami -d docs"
+    "docs": "rm -rf docs && ./node_modules/.bin/jsdoc -c jsdoc.json -t node_modules/minami -d docs",
+    "test": "sh ./scripts/test.sh"
   },
   "repository": {
     "type": "git",
