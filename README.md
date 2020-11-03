@@ -18,7 +18,7 @@ Docs are output in docs folder.
 1. Install via NPM
 
 ```
-npm install markwpearce/brighterscript-jsdocs-plugin --save-dev
+npm install brighterscript-jsdocs-plugin --save-dev
 ```
 
 2. Configure
