@@ -4,8 +4,8 @@ const path = require('path');
 
 const jsCommentStartRegex = /^[\s]*(?:\/\*+)?[\s]*(.*)/g
 const bsMeaningfulCommentRegex = /^[\s]*(?:'|REM)[\s]*\**[\s]*(.*)/g
-const paramRegex = /@param (?:{([^}]*)} )?(\w+)[\s-\s|\s]*(.*)/
-const returnRegex = /@returns?\s*(?:{(?:[^}]*)})?\s*(.*)/
+const paramRegex = /@param\s+(?:{([^}]*)})?\s+(?:\[(\w+).*\]|(\w+))[\s-\s|\s]*(.*)/
+const returnRegex = /@returns?\s*({(?:[^}]*)})?\s*(.*)/
 const extendsRegex = /@extends/
 
 /** @type {string[]} */
@@ -69,6 +69,27 @@ function getTypeName(type) {
   return "dynamic"
 }
 
+
+/**
+ * Helper to clean up param or return description strings
+ *
+ * @param {string} [desc=""]
+ * @return {string} cleaned up string
+ */
+function paramOrReturnDescriptionHelper(desc = "") {
+  desc = (desc || "").trim()
+  if (desc.startsWith("-")) {
+    return desc;
+  }
+  if (desc.startsWith(",")) {
+    desc = desc.substring(1);
+  }
+  if (desc) {
+    return "- " + desc;
+  }
+  return ""
+}
+
 /**
  * Finds the comment that ends the line above the given statement
  *
@@ -83,11 +104,10 @@ function getCommentForStatement(comments, stmt) {
 }
 
 function getMemberOf(moduleName = "", namespaceName = "") {
-  if (namespaceName) {
-    return (" * @memberof module:" + namespaceName)
-  }
-  if (moduleName) {
-    return (` * @memberof module:${moduleName}`);
+  const memberOf = namespaceName || moduleName
+
+  if (memberOf) {
+    return (` * @memberof module:${memberOf}`);
   }
   return ""
 }
@@ -167,78 +187,104 @@ function displayStatement(stmt) {
 function processFunction(comment, func, moduleName = "", namespaceName = "") {
   const output = []
   let commentLines = convertCommentTextToJsDocLines(comment);
+  const paramNameList = []
 
   // Find the param line in the comments that match each param
   for (const param of func.func.parameters) {
     let paramName = param.name.text;
+    paramNameList.push(paramName)
     let paramType = getTypeName(param.type.kind);
-    let paramDescription;
-    for (var i = 0; i < commentLines.length; i++) {
-      let commentMatch = commentLines[i].match(paramRegex);
-      if (commentMatch && paramName === commentMatch[2]) {
-        if (commentMatch[1]) paramType = commentMatch[1];
-        paramDescription = commentMatch[3];
-        commentLines.splice(i, 1);
-        i--;
-        break;
+    let paramDescription = "";
+
+    // remove @param lines for the current param
+    commentLines = commentLines.filter(commentLine => {
+      let commentMatch = commentLine.match(paramRegex);
+      if (commentMatch) {
+
+        const commentParamName = (commentMatch[2] || commentMatch[3]) || ""
+        const commentParamType = commentMatch[1] || ""
+
+        if (paramName.trim().toLowerCase() === commentParamName.trim().toLowerCase()) {
+          // same parameter name - use these details
+          if (commentParamType) {
+            paramType = commentParamType.trim();
+            paramDescription = commentMatch[4] || paramDescription
+          }
+          return false
+        }
       }
-    }
+      return true
+    })
 
     let paramLine = ` * @param {${paramType}} `
     if (param.defaultValue) {
       let start = param.defaultValue.range.start;
       let end = param.defaultValue.range.end;
-      let defaultValue = parserLines[start.line - 1].slice(start.character, end.character);
+      let defaultValue = parserLines[start.line].slice(start.character, end.character);
       paramLine += `[${paramName}=${defaultValue}]`
-    } else {
-      paramLine += paramName;
     }
-    if (paramDescription) paramLine += ` - ${paramDescription}`;
-    commentLines.push(paramLine);
+    else {
+
+      paramLine += paramName
+    }
+
+    if (paramDescription) {
+      paramLine += ` ${paramOrReturnDescriptionHelper(paramDescription)}`;
+    }
+    output.push(paramLine);
   }
-  if (func.name.text[0] === '_' || func.accessModifier === "Private") {
-    commentLines.push(' * @access private');
+
+  if (func.name.text[0] === '_' || func.accessModifier?.kind === "Private") {
+    output.push(' * @access private');
   }
 
   let returnLine = ` * @return {${getTypeName(func.func.returns)}}`
   // Find the return line in the comments
   for (var i = 0; i < commentLines.length; i++) {
     let commentMatch = commentLines[i].match(returnRegex);
-    if (commentMatch && commentMatch[1]) {
-      returnLine = ` * @return {${getTypeName(func.func.returns)}} - ${commentMatch[1]}`;
-
+    if (commentMatch) {
+      let commentReturnType = getTypeName(func.func.returns)
+      if (commentMatch[1] && commentMatch[1].trim().toLowerCase() == getTypeName(func.func.returns).toLowerCase) {
+        // there is a return type given, and it matches the type of the function
+        commentReturnType = commentMatch[1].trim()
+      }
+      returnLine = ` * @return {${commentReturnType}}`;
+      if (commentMatch[2]) {
+        returnLine += " " + paramOrReturnDescriptionHelper(commentMatch[2])
+      }
+      // remove the original comment @return line
       commentLines.splice(i, 1);
-      break;
     }
   }
 
-  commentLines.push(returnLine);
-  commentLines.push(getMemberOf(moduleName, namespaceName));
+
+  const totalOutput = [...commentLines, ...output]
+  totalOutput.push(returnLine);
+  totalOutput.push(getMemberOf(moduleName, namespaceName));
 
   if (func.overrides) {
-    commentLines.push(` * @override`);
+    totalOutput.push(` * @override`);
   }
 
   const funcName = func.name.text
-  let funcDeclaration = `function ${funcName}() {};\n`
+  let funcDeclaration = `function ${funcName} (${paramNameList.join(", ")}) { }; \n`
   if (func instanceof bs.ClassMethodStatement) {
     if (funcName.toLowerCase() === "new") {
-      commentLines.push(" * @constructor")
-      funcDeclaration = `constructor() {};\n`
+      totalOutput.push(" * @constructor")
+      funcDeclaration = `constructor(${paramNameList.join(", ")}) { }; \n`
     }
     else {
-      funcDeclaration = `${funcName}() {};\n`
+      funcDeclaration = `${funcName} (${paramNameList.join(", ")}) { }; \n`
     }
   }
-  commentLines.push(' */');
-  output.push(commentLines.join('\n'));
+  totalOutput.push(' */');
 
-  output.push(funcDeclaration);
+  totalOutput.push(funcDeclaration);
   if (namespaceName) {
-    output.push(`${namespaceName}.${funcName} = ${funcName};`)
+    totalOutput.push(`${namespaceName}.${funcName} = ${funcName}; `)
   }
 
-  return output.join('\n')
+  return totalOutput.join('\n')
 }
 
 /**
@@ -248,20 +294,17 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
  *
  * @param {bs.CommentStatement} comment the comment in the line above this field
  * @param {bs.ClassFieldStatement} field the field to process
- * @returns {string} the property tag for the class this field is in
+ * @return {string} the property tag for the class this field is in
  */
 function processClassField(comment, field) {
-  const output = []
-  if (field.accessModifier && field.accessModifier === "Private") {
+  if (field.accessModifier?.kind === "Private") {
     return ""
   }
   let description = "";
   if (comment) {
     description = comment.text.replace(bsMeaningfulCommentRegex, '$1');
   }
-  output.push(` * @property {${getTypeName(field.type)}} ${field.name.text} ${description}`)
-
-  return output.join('\n')
+  return ` * @property { ${getTypeName(field.type)} } ${field.name.text} ${description} `;
 }
 
 
@@ -282,11 +325,10 @@ function processClass(comment, klass, moduleName = "", namespaceName = "") {
   let commentLines = convertCommentTextToJsDocLines(comment);
   const klassCode = groupStatements(klass.body)
 
-
   let parentClassName = "", extendsLine = ""
   if (klass.parentClassName) {
     parentClassName = klass.parentClassName.getName()
-    extendsLine = ` * @extends ${klass.parentClassName.getName()}`
+    extendsLine = ` * @extends ${klass.parentClassName.getName()} `
   }
 
   for (var i = 0; i < commentLines.length; i++) {
@@ -324,7 +366,7 @@ function processClass(comment, klass, moduleName = "", namespaceName = "") {
 
   output.push('}\n')
   if (namespaceName) {
-    output.push(`${namespaceName}.${klassName} = ${klassName};`)
+    output.push(`${namespaceName}.${klassName} = ${klassName}; `)
   }
   return output.join('\n')
 }
@@ -352,7 +394,7 @@ function processNamespace(comment, namespace, moduleName = "", parentNamespaceNa
     let commentLines = convertCommentTextToJsDocLines(comment);
 
     commentLines.push(getMemberOf(moduleName, parentNamespaceName));
-    commentLines.push(` * @namespace ${namespaceName}`)
+    commentLines.push(` * @namespace ${namespaceName} `)
     commentLines.push(' */');
 
     output.push(commentLines.join('\n'));
@@ -360,7 +402,7 @@ function processNamespace(comment, namespace, moduleName = "", parentNamespaceNa
       output.push(`${parentNamespaceName}.namespaceName = {}`)
     }
     else {
-      output.push(`var ${namespaceName} = {};`);
+      output.push(`var ${namespaceName} = {}; `);
     }
     namespacesCreated.push(namespaceName)
   }
@@ -432,6 +474,8 @@ exports.handlers = {
       output.push(`/** @module ${moduleName} */`);
     }
     output.push(processStatements(statements, moduleName))
+
     e.source = output.join('\n');
+    // console.log(e.source)
   }
 };

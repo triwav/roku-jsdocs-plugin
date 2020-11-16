@@ -1,0 +1,46 @@
+'  Test Brighterscript function
+'  @param {object} foo something
+'  @param {integer} bar another thing
+'  @return the word "brighterscript"
+function testBsFunction(foo as object, bar as integer) as string
+  return "brighterscipt"
+end function
+
+' Give the maximum of two numbers
+' @param {integer} x - the first number
+' @param {integer} y - the second number
+' @return {integer} the max of x and y
+function max(x, y)
+  if x > y
+    return x
+  end if
+  return y
+end function
+
+
+' Say a greeting to someone
+'
+' @param {string} personName - the name of the person to greet
+' @param {string} [greeting="Hello"] - the greeting (try Hi, Goodbye, Bonjour, etc.)
+' @return {string} - the complete greeting
+function greetSomeone(personName as string, greeting = "Hello" as string) as string
+  return greeting + " " + personName
+end function
+
+' Always gives false
+'
+' @return {boolean}
+function alwaysReturnFalse() as boolean
+  return false
+end function
+
+
+' This function causes problems for Andres
+function andresError(param = True as boolean) as object
+  return {}
+end function
+
+
+sub subHasNoReturnValue()
+  ? "Make sure it is nonempty"
+end sub

@@ -1,17 +1,21 @@
 
 ' Namespace for testing
-namespace TestBsDoc
+namespace TestBsNamespace
 
   ' Test Brighterscript class
   class TestBsKlass
 
+    ' Public property
     prop as float = 1
 
     ' I like eating pie
-    someField as float = 3.14
+    pi as float = 3.14
+
+    ' Private properties should not have comments
+    private secret = "shhhhh!"
 
     ' Constructor
-    '@param {string} name for this Class
+    ' @param {string} name for this Class
     function new(name as string) as void
       m.name = name
     end function
@@ -27,5 +31,24 @@ namespace TestBsDoc
     function sayHello() as string
       return "hi " + m.name
     end function
+
+
+    ' Tells a secret
+    '
+    ' @return {string}
+    private function tellASecret() as string
+      return "The secret is - " + m.secret
+    end function
+
+
+
+    ' Tests a void return type with different capitalization
+    '
+    ' @return {Void}
+    function doNothing() as void
+
+    end function
+
+
   end class
 end namespace
