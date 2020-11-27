@@ -7,6 +7,9 @@
     "docs": "rm -rf docs && ./node_modules/.bin/jsdoc -c jsdoc.json -t node_modules/braintree-jsdoc-template -d docs",
     "test": "sh ./scripts/test.sh"
   },
+  "files": [
+    "convert-brighterscript-docs.js"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/markwpearce/brighterscript-jsdocs-plugin.git"
