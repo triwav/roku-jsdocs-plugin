@@ -25,6 +25,12 @@ Docs are output in docs folder.
 npm install brighterscript-jsdocs-plugin --save-dev
 ```
 
+I recommend using a custom template. I like https://github.com/braintree/jsdoc-template:
+
+```
+npm install braintree-jsdoc-template --save-dev
+```
+
 2. Configure
 
 Create a `./jsdoc.json` configuration file - https://jsdoc.app/about-configuring-jsdoc.html.
@@ -53,7 +59,7 @@ Example:
 
 ```json
   "scripts": {
-    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -d docs"
+    "docs": "./node_modules/.bin/jsdoc -c jsdoc.json -d docs -t ./node_modules/braintree-jsdoc-template"
   }
 ```
 

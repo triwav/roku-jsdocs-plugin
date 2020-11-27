@@ -1,0 +1,7 @@
+'@module MyModule
+namespace MyModule
+
+  class ClassInMyModule
+  end class
+
+end namespace

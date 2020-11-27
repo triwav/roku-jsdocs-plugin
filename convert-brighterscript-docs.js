@@ -104,7 +104,7 @@ function getCommentForStatement(comments, stmt) {
 }
 
 function getMemberOf(moduleName = "", namespaceName = "") {
-  const memberOf = namespaceName || moduleName
+  const memberOf = namespaceName || moduleName;
 
   if (memberOf) {
     return (` * @memberof module:${memberOf}`);
@@ -393,7 +393,9 @@ function processNamespace(comment, namespace, moduleName = "", parentNamespaceNa
     // have not created this namespace yet
     let commentLines = convertCommentTextToJsDocLines(comment);
 
+    //  if (namespaceName !== moduleName) {
     commentLines.push(getMemberOf(moduleName, parentNamespaceName));
+    // }
     commentLines.push(` * @namespace ${namespaceName} `)
     commentLines.push(' */');
 
@@ -460,19 +462,17 @@ exports.handlers = {
     const parseResult = parser.parse(lexResult.tokens);
     const statements = parseResult.statements
 
-    // Remove any leading Brightscript comment
-    let source = e.source.replace(bsMeaningfulCommentRegex, '$2');
-
     // Add our module to the top of the file if it doesn't exist. If it does find out the name
-    const moduleMatch = source.match(/@module ([^\*\s]+)/);
+    const moduleMatch = e.source.match(/@module ([^\*\s]+)/);
     let moduleName = "";
     const output = [];
     if (moduleMatch) {
       moduleName = moduleMatch[1];
     } else {
       moduleName = path.parse(e.filename).name.replace(/\./g, '_');
-      output.push(`/** @module ${moduleName} */`);
     }
+    output.push(`/** @module ${moduleName} */`);
+
     output.push(processStatements(statements, moduleName))
 
     e.source = output.join('\n');
