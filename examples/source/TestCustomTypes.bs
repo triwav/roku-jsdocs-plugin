@@ -1,0 +1,11 @@
+class MyClass
+end class
+
+class CustomTypesTest
+
+  someProp as MyClass
+
+  function someFunc(klass as MyClass) as MyClass
+    return klass
+  end function
+end class
