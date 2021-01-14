@@ -52,19 +52,18 @@ function groupStatements(statements) {
  * Gets the type name for the given type
  * Defaults to "dynamic" if it can't decide
  *
- * @param {number | {kind:text}} type id or Type Token
+ * @param {bs.BscType} type the type
  * @returns {string} the name for the type id given
  */
 function getTypeName(type) {
   if (!type) {
     return "dynamic"
   }
-  if (type.text) {
-    return type.text
+  if (bs.isCustomType(type)) {
+    return type.name;
   }
-  const valueKind = bs.ValueKind[type]
-  if (valueKind) {
-    return valueKind.toString();
+  if (type.toTypeString) {
+    return type.toTypeString()
   }
   return "dynamic"
 }
@@ -193,7 +192,7 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
   for (const param of func.func.parameters) {
     let paramName = param.name.text;
     paramNameList.push(paramName)
-    let paramType = getTypeName(param.type.kind);
+    let paramType = getTypeName(param.type);
     let paramDescription = "";
 
     // remove @param lines for the current param
@@ -238,13 +237,13 @@ function processFunction(comment, func, moduleName = "", namespaceName = "") {
     output.push(' * @access private');
   }
 
-  let returnLine = ` * @return {${getTypeName(func.func.returns)}}`
+  let returnLine = ` * @return {${getTypeName(func.func.returnType)}}`
   // Find the return line in the comments
   for (var i = 0; i < commentLines.length; i++) {
     let commentMatch = commentLines[i].match(returnRegex);
     if (commentMatch) {
-      let commentReturnType = getTypeName(func.func.returns)
-      if (commentMatch[1] && commentMatch[1].trim().toLowerCase() == getTypeName(func.func.returns).toLowerCase) {
+      let commentReturnType = getTypeName(func.func.returnType)
+      if (commentMatch[1] && commentMatch[1].trim().toLowerCase() == commentReturnType.toLowerCase()) {
         // there is a return type given, and it matches the type of the function
         commentReturnType = commentMatch[1].trim()
       }
@@ -304,7 +303,7 @@ function processClassField(comment, field) {
   if (comment) {
     description = comment.text.replace(bsMeaningfulCommentRegex, '$1');
   }
-  return ` * @property { ${getTypeName(field.type)} } ${field.name.text} ${description} `;
+  return ` * @property { ${getTypeName(field.getType())} } ${field.name.text} ${description} `;
 }
 
 
@@ -455,11 +454,15 @@ function processStatements(statements, moduleName = "", namespaceName = "") {
 
 exports.handlers = {
   beforeParse(e) {
-
     parserLines = e.source.split('\n');
+    const parserOptions = {};
+    const fileExt = path.extname(e.filename);
+    if (fileExt.toLowerCase() === ".bs") {
+      parserOptions.mode = bs.ParseMode.BrighterScript;
+    }
     const lexResult = bs.Lexer.scan(e.source);
     const parser = new bs.Parser();
-    const parseResult = parser.parse(lexResult.tokens);
+    const parseResult = parser.parse(lexResult.tokens, parserOptions);
     const statements = parseResult.statements
 
     // Add our module to the top of the file if it doesn't exist. If it does find out the name
@@ -476,6 +479,6 @@ exports.handlers = {
     output.push(processStatements(statements, moduleName))
 
     e.source = output.join('\n');
-    // console.log(e.source)
+    //console.log(e.source)
   }
 };
