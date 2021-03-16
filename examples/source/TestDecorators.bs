@@ -1,0 +1,18 @@
+
+
+@someDecorator("func")
+function funcWithDecorator(parm1 as string) as string
+  return param1
+end function
+
+@someDecorator("class")
+class AnnotationsTestKlass
+
+  @someDecorator("property")
+  property as float = 3.14
+
+  @someDecorator("method")
+  function someFunc(num) as string
+    return `hello ${num}`
+  end function
+end class

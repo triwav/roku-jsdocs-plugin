@@ -5,7 +5,11 @@ class CustomTypesTest
 
   someProp as MyClass
 
+
   function someFunc(klass as MyClass) as MyClass
-    return klass
+    k = "hello"
+    j = 0
+    jj = j + k
+
   end function
 end class
